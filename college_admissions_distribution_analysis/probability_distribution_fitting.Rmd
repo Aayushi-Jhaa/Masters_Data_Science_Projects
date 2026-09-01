@@ -1,0 +1,128 @@
+---
+title: "probability_distribution_fitting"
+output: html_document
+date: "2026-06-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(ISLR)
+data(College)
+```
+
+
+We consider the variable `Accept`, which gives the number of applications accepted by each college.
+
+```{r}
+accept <- College$Accept
+summary(accept)
+```
+
+## Part 1: Histogram of accepted applications with exponential fit
+
+We assume that the number of applications accepted can be modelled as an exponential random variable with parameter beta equal to the sample mean.
+
+```{r}
+beta_hat <- mean(accept)
+beta_hat
+```
+
+The exponential density in R uses `rate = 1 / beta`.
+
+```{r}
+hist(accept,
+     probability = TRUE,
+     breaks = 30,
+     main = "Histogram of Accepted Applications with Exponential Fit",
+     xlab = "Number of Applications Accepted")
+
+x_vals <- seq(min(accept), max(accept), length.out = 1000)
+y_vals <- dexp(x_vals, rate = 1 / beta_hat)
+
+lines(x_vals, y_vals, lwd = 2)
+```
+
+## Part 1: Histogram of log accepted applications with normal fit
+
+Now consider the log of the number of applications accepted.
+
+```{r}
+log_accept <- log(accept)
+
+mu_hat <- mean(log_accept)
+sigma_hat <- sd(log_accept)
+
+mu_hat
+sigma_hat
+```
+
+We now fit a normal distribution to the log data.
+
+```{r}
+hist(log_accept,
+     probability = TRUE,
+     breaks = 30,
+     main = "Histogram of Log Accepted Applications with Normal Fit",
+     xlab = "Log Number of Applications Accepted")
+
+x_vals <- seq(min(log_accept), max(log_accept), length.out = 1000)
+y_vals <- dnorm(x_vals, mean = mu_hat, sd = sigma_hat)
+
+lines(x_vals, y_vals, lwd = 2)
+```
+
+## Answer
+
+The histogram of the original `Accept` variable is strongly right-skewed, with most colleges accepting relatively small numbers of applications and a few colleges accepting very large numbers. The exponential density captures the general decreasing shape, but it does not fit the full distribution perfectly, especially because of the long right tail.
+
+After taking logs, the histogram of `log(Accept)` is much more symmetric and approximately bell-shaped. The fitted normal density follows the shape of the log-transformed data reasonably well. This suggests that the normal model for `log(Accept)` provides a better fit than the exponential model for the original `Accept` values.
+
+
+## Part 2: Probability that a college accepts more than 2500 applications
+
+Under the fitted exponential model:
+
+```{r}
+p_exp <- 1 - pexp(2500, rate = 1 / beta_hat)
+p_exp
+```
+
+Under the fitted normal model for the log data:
+
+```{r}
+p_norm_log <- 1 - pnorm(log(2500), mean = mu_hat, sd = sigma_hat)
+p_norm_log
+```
+
+Observed proportion in the data:
+
+```{r}
+p_observed <- mean(accept > 2500)
+p_observed
+```
+
+Compare the model predictions with the observed data:
+
+```{r}
+p_exp
+p_norm_log
+p_observed
+```
+
+```{r}
+abs(p_exp - p_observed)
+abs(p_norm_log - p_observed)
+```
+## Answer
+The fitted exponential model gives probability 0.2899.
+The fitted normal model on the log data gives probability 0.2353.
+The observed proportion in the data is 0.2432.
+
+To compare the accuracy of the two fitted models, we calculate the absolute difference between each model prediction and the observed proportion:
+
+|0.2899 - 0.2432| = 0.0466
+
+|0.2353 - 0.2432| = 0.0080
+
+Since (0.0080 < 0.0466), the fitted normal model on the log data is more accurate. 
+The exponential model overestimates the probability that a college accepts more than 2500 applications, while the normal model on the log data gives a prediction much closer to the observed proportion.

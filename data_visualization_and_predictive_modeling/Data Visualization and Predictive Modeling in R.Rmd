@@ -1,0 +1,246 @@
+---
+title: "data_visualization_and_predictive_modeling"
+author: "Aayushi Jha"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Question 1
+
+## (a) Lowest sodium content
+
+**Persona:**\
+Name : Sasha Hemsworth\
+Role : Marketing Director for Rico's Pizza\
+Age : 45\
+Goals : Wants to highlight the brand’s healthier options in marketing campaigns.\
+Frustrations : Misleading visuals that exaggerate nutritional claims.\
+Motivation : Create an honest but appealing graphic showing that their pizzas are low in sodium compared to competitors mainly To appeal to the sodium conscious buyers.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+pizza <- read.csv("pizza.csv")
+head(pizza)
+
+# Compute average sodium per brand
+sodium_summary <- pizza %>%
+  group_by(brand) %>%
+  summarise(mean_sodium = mean(sodium, na.rm = TRUE)) %>%
+  arrange(mean_sodium)
+
+# Plot using the summarized data
+ggplot(sodium_summary, aes(x = reorder(brand, mean_sodium), y = mean_sodium, fill = mean_sodium)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(
+    x = "Brand",
+    y = "Average Sodium (g per 100g)",
+    title = "Average Sodium Content Across Pizza Brands (Highest to Lowest)"
+  ) +
+  scale_fill_gradient(low = "orange", high = "darkred") +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+**Aesthetics mapping:**\
+x-axis : Brand (ordered by average sodium content, lowest to highest).\
+y-axis : Sodium (grams per 100g).\
+Fill colour : Sodium level, where lighter shades indicate lower sodium and darker shades represent higher sodium.
+
+**Pre-attentive and Gestalt principles:**\
+Length and position : along a common scale make it easy to compare sodium levels across brands. Colour intensity : (light to dark gradient) draws immediate attention to higher-sodium brands.\
+Sorting and proximity : group similar brands, making patterns easier to perceive.\
+Figure-ground separation : (clean background, no gridlines) improves visual clarity, suitable for marketing presentation.
+
+**Final Answer:**\
+Brand H has the lowest sodium content, as seen by the shortest bar and the lightest shade of orange as seen in the plot. The clear ordering and colour gradient make it easy to identify at a glance.
+
+## (b) Energy content difference
+
+**Persona:**\
+Name : Joseph Johnson\
+Role : Marketing Director at Brand C\
+Age : 39\
+Goals : Understand how Brand C’s products compare in total energy to competitors and identify whether it can be promoted as a lighter or indulgent option.\
+Frustrations : Technical charts without clear take-aways.\
+Motivation : Needs a simple, accurate visual for an internal strategy report that quickly shows where Brand C sits among rivals.
+
+```{r}
+pizza <- pizza %>%
+  mutate(energy_kJ = 17 * prot + 37 * fat + 17 * carb)
+head(pizza)
+
+energy_summary <- pizza %>%
+  group_by(brand) %>%
+  summarise(mean_energy = mean(energy_kJ, na.rm = TRUE))
+
+ggplot(energy_summary, aes(x = reorder(brand, mean_energy), y = mean_energy,
+                           fill = brand == "C")) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(
+    x = "Brand",
+    y = "Average Energy (kJ per 100g)",
+    title = "Overall Energy Content by Pizza Brand"
+  ) +
+  scale_fill_manual(values = c("grey", "darkorange")) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+**Aesthetics mapping:**\
+x-axis : Brand (ordered by mean energy content).\
+y-axis : Average energy (kJ per 100 g).\
+Fill colour : Brand C highlighted in orange to emphasise focus; all other brands shown in grey for comparison.
+
+**Pre-attentive and Gestalt principles:**\
+Length and position : allow quick and accurate comparison of total energy across brands.\
+Colour contrast : isolates Brand C, drawing immediate attention to it within the group.\
+Sorting : facilitates recognition of which brands are higher or lower in energy.\
+Minimal visual clutter : (no gridlines, uniform bar spacing) maintains figure–ground clarity and a professional marketing style.
+
+**Final Answer:**\
+Brand C’s pizzas have a slightly lower average energy content compared with most competitors.\
+This is evident from Brand C’s orange bar being shorter than the majority of grey bars, clearly positioning it as a comparatively lighter option in terms of total energy.
+
+## (c) Proportion of energy from different sources
+
+**Persona:**\
+Name: Dr. Lauren Thomas Salon\
+Role: Clinical Dietician and Contributor to Nutrition Insights Magazine\
+Age: 52\
+Goals: To understand the macronutrient energy composition of different pizza brands and identify which options have more balanced nutrient distributions.\
+Frustrations: Charts that focus on total energy without breaking down nutrient contributions.\
+Motivation: Wants an accurate, easy-to-interpret visual showing the proportion of energy from fat, protein, and carbohydrates for each brand to support evidence-based recommendations.
+
+```{r}
+pizza <- pizza %>%
+  mutate(
+    energy_fat = 37 * fat,
+    energy_prot = 17 * prot,
+    energy_carb = 17 * carb,
+    total_energy = energy_fat + energy_prot + energy_carb,
+    pct_fat = 100 * energy_fat / total_energy,
+    pct_prot = 100 * energy_prot / total_energy,
+    pct_carb = 100 * energy_carb / total_energy
+  )
+energy_prop <- pizza %>%
+  group_by(brand) %>%
+  summarise(
+    fat_pct = mean(pct_fat, na.rm = TRUE),
+    prot_pct = mean(pct_prot, na.rm = TRUE),
+    carb_pct = mean(pct_carb, na.rm = TRUE)
+  )
+library(tidyr)
+
+energy_prop_long <- energy_prop %>%
+  pivot_longer(cols = c(fat_pct, prot_pct, carb_pct),
+               names_to = "source", values_to = "percentage")
+
+ggplot(energy_prop_long, aes(x = reorder(brand, -percentage), y = percentage, fill = source)) +
+  geom_bar(stat = "identity", position = "stack") +
+  coord_flip() +
+  labs(
+    x = "Brand",
+    y = "Proportion of Energy (%)",
+    title = "Proportion of Energy from Fat, Protein, and Carbohydrates by Brand"
+  ) +
+  scale_fill_manual(values = c("fat_pct" = "#E64B35", "prot_pct" = "#4DBBD5", "carb_pct" = "#00A087"),
+                    labels = c("Fat", "Protein", "Carbohydrates"),
+                    name = "Energy Source") +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+```
+
+**Aesthetics mapping:**\
+x-axis : Brand (ordered alphabetically for clarity).\
+y-axis : Proportion of total energy (%).\
+Fill color : Macronutrient source — fat (green), protein (orange-red), and carbohydrates (blue).
+
+**Pre-attentive and Gestalt principles:**\
+Colour hue : differentiates the three macronutrient groups, allowing dieticians to interpret nutrient composition at a glance.\
+Length and position : makes proportional comparisons straightforward.\
+Similarity : (consistent bar widths) and *proximity* (stacked structure) reinforce the idea that each bar represents one complete pizza brand profile.\
+Minimal visual clutter : and a professional colour palette maintain clarity for publication in a nutritional context.
+
+**Final Answer:**\
+Brand A and Brand D have visibly lower proportions of fat-derived energy and a higher contribution from protein and carbohydrates, indicating comparatively leaner nutrient compositions.\
+In contrast, Brands J, H, and G show the highest fat proportions, suggesting they are more energy-dense options.\
+These differences in macronutrient distribution are valuable for dieticians assessing the relative nutritional balance of various pizzas brands.
+
+# Question 2
+
+## (a)
+
+```{r}
+bikes <- read.csv("bikes.csv")
+model <- lm(cnt ~ atemp + hum + windspeed + workingday, data = bikes)
+summary(model)
+
+```
+
+A multiple linear regression model was fitted with **cnt** (daily bike rentals) as the response variable and predictors **atemp**, **hum**, **windspeed**, and **workingday**.These predictors were selected because they are **known before the start of the day** and would therefore be **available when forecasting future rental counts**, such as predicting the number of rentals a year from now using weather forecasts and calendar data.
+
+The model explains approximately **46% of the variation** in daily rentals (adjusted R² = 0.461). Higher temperatures are strongly associated with increased rentals, while higher humidity and windspeed both reduce demand.\
+The effect of working day is small and statistically insignificant.\
+Overall, the model so far suggests that **weather conditions** are the main drivers of daily bike rental demand.
+
+## (b)
+
+```{r}
+
+par(mfrow = c(1, 2))       
+plot(model, which = 1)     # 1. Residuals vs Fitted
+plot(model, which = 2)     # 2. Normal Q–Q
+par(mfrow = c(1, 1))       
+```
+
+1)  **Residuals vs Fitted**\
+    The residual cloud shows slight curvature in the loses line and a somewhat larger spread at higher fitted values.\
+    **Conclusion:** indications of **mild non-linearity** and **heteroscedasticity**. A few observations have large residuals (e.g., 69, 203).
+
+2)  **Normal Q–Q**\
+    Residuals follow the reference line in the center but deviate in both tails, with some labelled points (e.g., 595).\
+    **Conclusion:** **heavy-tailed / non-normal** residuals and potential outliers.
+
+**Overall:** Assumptions are **not badly broken**, but there is evidence of mild non-linearity, heteroscedasticity, and heavy tails.
+
+## (c)
+
+```{r}
+library(broom)
+coef_df <- tidy(model, conf.int = TRUE)
+
+# forest plot
+ggplot(coef_df, aes(x = estimate, y = term)) +
+  geom_point(size = 3, colour = "steelblue") +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, colour = "darkgrey") +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "red") +
+  labs(
+    title = "Forest Plot of Regression Coefficients",
+    x = "Coefficient Estimate (with 95% CI)",
+    y = "Predictor"
+  ) +
+  theme_minimal()
+```
+
+A forest plot was created to display the estimated coefficients of the regression model along with their 95% confidence intervals.\
+The red dashed line at zero helps to identify which predictors have a statistically significant effect on the number of bike rentals.
+
+**Interpretation:**\
+- **Temperature (atemp) :** Has a strong positive coefficient. As temperature increases, the number of bike rentals rises significantly,which indicates that people are more likely to rent bikes in warmer weather.\
+- **Humidity (hum) :** Shows a negative relationship with bike rentals. Higher humidity levels reduce the number of rides, likely due to discomfort in humid conditions.\
+- **Windspeed :** Negatively associated with bike rentals. Strong winds discourage people from cycling.\
+- **Workingday :** Has a very small positive coefficient, and its confidence interval crosses zero, suggesting that the effect is not statistically significant.
