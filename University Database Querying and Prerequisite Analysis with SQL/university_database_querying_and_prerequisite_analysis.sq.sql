@@ -1,6 +1,5 @@
 -------------------------
--- Project 1 Solution Template
--- COMP9311 24T3
+-- University Database Querying and Prerequisite Analysis with SQL
 -- Name: Aayushi Jha
 -- zID: z5576935
 -------------------------
